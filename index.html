@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#070b14" />
+  <title>JARVIS — Voice Assistant</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      color-scheme: dark;
+      --bg: #070b14;
+      --panel: rgba(14, 22, 38, .78);
+      --line: rgba(119, 190, 255, .13);
+      --muted: #8290a8;
+      --text: #edf5ff;
+      --cyan: #62e5ff;
+      --blue: #638cff;
+      --green: #8cf5cb;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--text);
+      font-family: "Manrope", sans-serif;
+      background:
+        radial-gradient(ellipse at 50% 40%, rgba(19, 76, 115, .2), transparent 38%),
+        radial-gradient(ellipse at 85% 10%, rgba(53, 49, 126, .16), transparent 34%),
+        var(--bg);
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      content: "";
+      opacity: .23;
+      pointer-events: none;
+      background-image: linear-gradient(rgba(120, 180, 255, .035) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(120, 180, 255, .035) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(to bottom, black, transparent 85%);
+    }
+
+    button { font: inherit; }
+
+    .app {
+      width: min(1120px, calc(100% - 40px));
+      min-height: 100vh;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      height: 82px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      letter-spacing: .2em;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(98, 229, 255, .5);
+      border-radius: 50%;
+      color: var(--cyan);
+      box-shadow: 0 0 20px rgba(98, 229, 255, .15), inset 0 0 12px rgba(98, 229, 255, .1);
+      font-size: 12px;
+    }
+
+    .header-right, .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-family: "DM Mono", monospace;
+      font-size: 11px;
+      letter-spacing: .08em;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 310px;
+      align-items: center;
+      gap: 70px;
+      padding: 48px 0 56px;
+    }
+
+    .hero { text-align: center; }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--cyan);
+      font-family: "DM Mono", monospace;
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 55px);
+      font-weight: 600;
+      letter-spacing: -.055em;
+    }
+
+    .subtitle {
+      min-height: 26px;
+      margin: 12px 0 32px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .orb-wrap {
+      position: relative;
+      width: min(340px, 72vw);
+      aspect-ratio: 1;
+      margin: 0 auto 30px;
+      display: grid;
+      place-items: center;
+    }
+
+    .orbit {
+      position: absolute;
+      inset: 7%;
+      border: 1px solid rgba(98, 229, 255, .18);
+      border-radius: 50%;
+      animation: rotate 24s linear infinite;
+    }
+
+    .orbit::before, .orbit::after {
+      position: absolute;
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 15px var(--cyan);
+    }
+
+    .orbit::before { top: 13%; left: 17%; }
+    .orbit::after { right: 7%; bottom: 28%; width: 4px; height: 4px; }
+
+    .orbit-two {
+      inset: 16%;
+      border-color: rgba(99, 140, 255, .16);
+      animation: rotate 18s linear infinite reverse;
+    }
+
+    .orbit-two::before {
+      top: auto;
+      bottom: 8%;
+      left: 25%;
+      background: var(--blue);
+      box-shadow: 0 0 12px var(--blue);
+    }
+
+    .orb-glow {
+      position: absolute;
+      width: 72%;
+      height: 72%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(30, 184, 231, .23), rgba(31, 84, 159, .09) 48%, transparent 72%);
+      filter: blur(7px);
+      transition: transform .4s, opacity .4s;
+    }
+
+    .orb {
+      position: relative;
+      width: 52%;
+      height: 52%;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 1px solid rgba(112, 225, 255, .55);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 34% 28%, rgba(120, 240, 255, .6), transparent 13%),
+        radial-gradient(circle at 50% 40%, #164a71 0%, #0c2039 43%, #091321 73%);
+      box-shadow: 0 0 25px rgba(60, 211, 255, .25),
+                  0 0 85px rgba(24, 132, 205, .2),
+                  inset 0 0 32px rgba(62, 207, 255, .14);
+      transition: transform .3s, box-shadow .3s;
+    }
+
+    .orb::before, .orb::after {
+      position: absolute;
+      content: "";
+      width: 130%;
+      height: 130%;
+      border: 1px solid rgba(142, 235, 255, .17);
+      border-radius: 42%;
+      animation: wave 8s linear infinite;
+    }
+
+    .orb::after {
+      width: 115%;
+      height: 115%;
+      border-color: rgba(112, 164, 255, .2);
+      animation-duration: 11s;
+      animation-direction: reverse;
+    }
+
+    .orb-icon {
+      position: relative;
+      z-index: 1;
+      color: #b7f5ff;
+      filter: drop-shadow(0 0 10px rgba(98, 229, 255, .8));
+    }
+
+    .orb-icon svg { width: 40px; height: 40px; }
+
+    .listening .orb {
+      transform: scale(1.055);
+      box-shadow: 0 0 35px rgba(60, 211, 255, .55),
+                  0 0 110px rgba(24, 132, 205, .35),
+                  inset 0 0 42px rgba(62, 207, 255, .24);
+    }
+
+    .listening .orb-glow {
+      transform: scale(1.18);
+      opacity: .9;
+    }
+
+    .listening .orbit { animation-duration: 5s; }
+    .speaking .orb { animation: pulse .85s ease-in-out infinite alternate; }
+
+    .mic-button {
+      width: 64px;
+      height: 64px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto;
+      border: 1px solid rgba(98, 229, 255, .45);
+      border-radius: 50%;
+      color: #06121c;
+      background: linear-gradient(145deg, #a5f3ff, #55cbe9);
+      box-shadow: 0 0 25px rgba(98, 229, 255, .28), inset 0 1px 2px white;
+      cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+    }
+
+    .mic-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 35px rgba(98, 229, 255, .45), inset 0 1px 2px white;
+    }
+
+    .mic-button:focus-visible, .clear-button:focus-visible {
+      outline: 2px solid white;
+      outline-offset: 4px;
+    }
+
+    .mic-button svg { width: 23px; height: 23px; }
+    .mic-hint { margin: 12px 0 0; color: var(--muted); font-size: 11px; }
+
+    .side-panel {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(145deg, rgba(19, 30, 49, .85), rgba(10, 16, 29, .75));
+      box-shadow: 0 18px 60px rgba(0, 0, 0, .18);
+      backdrop-filter: blur(14px);
+    }
+
+    .panel-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-heading h2 {
+      margin: 0;
+      font-size: 12px;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+
+    .clear-button {
+      padding: 4px 0 4px 8px;
+      border: 0;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    .clear-button:hover { color: var(--cyan); }
+
+    .conversation {
+      min-height: 190px;
+      max-height: 260px;
+      overflow-y: auto;
+      padding: 8px 2px;
+      scrollbar-color: #263d56 transparent;
+      scrollbar-width: thin;
+    }
+
+    .message {
+      margin: 14px 0;
+      animation: appear .25s ease-out;
+    }
+
+    .message-label {
+      margin-bottom: 5px;
+      color: var(--cyan);
+      font-family: "DM Mono", monospace;
+      font-size: 9px;
+      letter-spacing: .14em;
+    }
+
+    .message.user .message-label { color: #a7b5ca; }
+    .message p { margin: 0; color: #d7e1ef; font-size: 12px; line-height: 1.65; }
+    .empty-state { padding: 45px 10px; color: #718098; text-align: center; font-size: 12px; line-height: 1.7; }
+
+    .commands {
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .commands h3 {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-family: "DM Mono", monospace;
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .command-list { display: flex; flex-wrap: wrap; gap: 7px; }
+
+    .command-chip {
+      padding: 7px 9px;
+      border: 1px solid rgba(130, 170, 212, .16);
+      border-radius: 7px;
+      color: #b8c6d9;
+      background: rgba(255, 255, 255, .025);
+      font-size: 10px;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+      color: #64728a;
+      font-family: "DM Mono", monospace;
+      font-size: 9px;
+      letter-spacing: .08em;
+    }
+
+    @keyframes rotate { to { transform: rotate(360deg); } }
+    @keyframes wave { to { transform: rotate(360deg) scale(1.03); } }
+    @keyframes pulse { to { transform: scale(1.07); } }
+    @keyframes appear { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 760px) {
+      .app { width: min(100% - 32px, 560px); }
+      header { height: 68px; }
+      main { grid-template-columns: 1fr; gap: 38px; padding: 44px 0 32px; }
+      .orb-wrap { width: min(290px, 70vw); }
+      .side-panel { width: 100%; }
+      .conversation { min-height: 125px; max-height: 210px; }
+      footer { gap: 12px; font-size: 8px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <span class="brand-mark">J</span>
+        JARVIS
+      </div>
+      <div class="header-right">
+        <span class="status-dot"></span>
+        <span id="system-status">SYSTEM READY</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" aria-label="Voice assistant">
+        <p class="eyebrow">PERSONAL AI INTERFACE</p>
+        <h1>How can I help?</h1>
+        <p class="subtitle" id="assistant-status" aria-live="polite">Your assistant is ready when you are.</p>
+
+        <div class="orb-wrap" id="orb-wrap">
+          <div class="orb-glow"></div>
+          <div class="orbit"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="orb">
+            <span class="orb-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M19 11.5a7 7 0 0 1-14 0M12 18.5V22m-4 0h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <button class="mic-button" id="mic-button" aria-label="Start listening">
+          <svg id="mic-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M19 11.5a7 7 0 0 1-14 0M12 18.5V22m-4 0h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <p class="mic-hint" id="mic-hint">TAP TO SPEAK</p>
+      </section>
+
+      <aside class="side-panel">
+        <div class="panel-heading">
+          <h2>Conversation</h2>
+          <button class="clear-button" id="clear-button">Clear</button>
+        </div>
+        <div class="conversation" id="conversation" aria-live="polite">
+          <div class="empty-state" id="empty-state">
+            Your conversation will appear here.<br />
+            Tap the mic and say “Hello, Jarvis.”
+          </div>
+        </div>
+        <div class="commands">
+          <h3>Try saying</h3>
+          <div class="command-list">
+            <span class="command-chip">“What time is it?”</span>
+            <span class="command-chip">“What’s today’s date?”</span>
+            <span class="command-chip">“Search for…”</span>
+            <span class="command-chip">“Open YouTube”</span>
+            <span class="command-chip">“Help”</span>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      <span>VOICE INTERFACE · BROWSER EDITION</span>
+      <span id="clock"></span>
+    </footer>
+  </div>
+
+  <script>
+    const statusText = document.getElementById("assistant-status");
+    const systemStatus = document.getElementById("system-status");
+    const micHint = document.getElementById("mic-hint");
+    const micButton = document.getElementById("mic-button");
+    const conversation = document.getElementById("conversation");
+    const orbWrap = document.getElementById("orb-wrap");
+    const emptyState = document.getElementById("empty-state");
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let listening = false;
+
+    function updateClock() {
+      document.getElementById("clock").textContent =
+        new Intl.DateTimeFormat(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }).format(new Date()).toUpperCase();
+    }
+    updateClock();
+    setInterval(updateClock, 30000);
+
+    function addMessage(sender, text) {
+      if (emptyState) emptyState.remove();
+
+      const message = document.createElement("div");
+      message.className = `message ${sender === "YOU" ? "user" : ""}`;
+
+      const label = document.createElement("div");
+      label.className = "message-label";
+      label.textContent = sender;
+
+      const body = document.createElement("p");
+      body.textContent = text;
+
+      message.append(label, body);
+      conversation.appendChild(message);
+      conversation.scrollTop = conversation.scrollHeight;
+    }
+
+    function speak(text) {
+      if (!("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1;
+      utterance.pitch = 0.95;
+      utterance.onstart = () => orbWrap.classList.add("speaking");
+      utterance.onend = () => orbWrap.classList.remove("speaking");
+      utterance.onerror = () => orbWrap.classList.remove("speaking");
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function respond(text, shouldSpeak = true) {
+      addMessage("JARVIS", text);
+      statusText.textContent = text;
+      if (shouldSpeak) speak(text);
+    }
+
+    function openSearch(query) {
+      const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+      return `Searching the web for ${query}.`;
+    }
+
+    function handleCommand(rawText) {
+      const text = rawText.toLowerCase().trim();
+      addMessage("YOU", rawText);
+
+      if (/\b(help|what can you do|commands)\b/.test(text)) {
+        respond("I can tell you the time and date, search the web, or open popular websites. Try saying, search for space news.");
+      } else if (/\b(time|clock)\b/.test(text)) {
+        const time = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date());
+        respond(`It is ${time}.`);
+      } else if (/\b(date|day|today)\b/.test(text)) {
+        const date = new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" }).format(new Date());
+        respond(`Today is ${date}.`);
+      } else if (/\b(search|google|look up|find)\b/.test(text)) {
+        const query = text.replace(/^(please\s+)?(search for|search|google|look up|find)\s*/i, "").trim();
+        if (query) respond(openSearch(query));
+        else respond("What would you like me to search for?");
+      } else if (/\b(open|launch|go to)\b/.test(text)) {
+        const sites = [
+          { names: ["youtube"], url: "https://youtube.com", label: "YouTube" },
+          { names: ["github"], url: "https://github.com", label: "GitHub" },
+          { names: ["gmail", "email"], url: "https://mail.google.com", label: "Gmail" },
+          { names: ["google"], url: "https://google.com", label: "Google" },
+          { names: ["spotify"], url: "https://open.spotify.com", label: "Spotify" }
+        ];
+        const site = sites.find(item => item.names.some(name => text.includes(name)));
+        if (site) {
+          window.open(site.url, "_blank", "noopener,noreferrer");
+          respond(`Opening ${site.label}.`);
+        } else {
+          respond("I don't recognize that site yet. Try YouTube, GitHub, Gmail, Google, or Spotify.");
+        }
+      } else if (/\b(hello|hi|hey)\b/.test(text)) {
+        respond("Hello. Jarvis is online and ready to help.");
+      } else if (/\b(thank you|thanks)\b/.test(text)) {
+        respond("You're welcome. Let me know if you need anything else.");
+      } else {
+        respond("I’m not sure how to help with that yet. Say “help” to hear what I can do.");
+      }
+    }
+
+    function setListening(value) {
+      listening = value;
+      orbWrap.classList.toggle("listening", value);
+      micHint.textContent = value ? "LISTENING · TAP TO STOP" : "TAP TO SPEAK";
+      statusText.textContent = value ? "I'm listening…" : "Your assistant is ready when you are.";
+      systemStatus.textContent = value ? "LISTENING" : "SYSTEM READY";
+      micButton.setAttribute("aria-label", value ? "Stop listening" : "Start listening");
+    }
+
+    if (!SpeechRecognition) {
+      statusText.textContent = "Voice recognition isn’t supported in this browser. Try Chrome or Edge.";
+      micHint.textContent = "VOICE INPUT NOT SUPPORTED";
+      micButton.disabled = true;
+      micButton.style.opacity = ".45";
+      systemStatus.textContent = "TEXT-ONLY MODE";
+    } else {
+      recognition = new SpeechRecognition();
+      recognition.lang = navigator.language || "en-US";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => setListening(true);
+
+      recognition.onresult = event => {
+        const transcript = event.results[event.results.length - 1][0].transcript;
+        handleCommand(transcript);
+      };
+
+      recognition.onerror = event => {
+        const messages = {
+          "not-allowed": "Microphone access was blocked. Allow microphone access in your browser settings.",
+          "no-speech": "I didn’t hear anything. Tap the mic and try again.",
+          "audio-capture": "No microphone was found. Check your device and try again."
+        };
+        respond(messages[event.error] || "Something went wrong with voice input. Please try again.", false);
+      };
+
+      recognition.onend = () => setListening(false);
+
+      micButton.addEventListener("click", () => {
+        if (listening) recognition.stop();
+        else {
+          try { recognition.start(); }
+          catch { respond("Voice input is already starting. Please try again in a moment.", false); }
+        }
+      });
+    }
+
+    document.getElementById("clear-button").addEventListener("click", () => {
+      conversation.replaceChildren();
+      const state = document.createElement("div");
+      state.className = "empty-state";
+      state.id = "empty-state";
+      state.innerHTML = "Your conversation will appear here.<br />Tap the mic and say “Hello, Jarvis.”";
+      conversation.appendChild(state);
+    });
+  </script>
+</body>
+</html>
